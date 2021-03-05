@@ -163,3 +163,37 @@ internals('memoize different objects', () => {
 })
 
 internals.run()
+
+// ---
+
+/**
+Tests for the public API
+**/
+const pubapi = suite('pubapi')
+
+pubapi.before.each(() => {
+  // Mocks
+  globalThis.styleElement = { cssText: '' }
+  globalThis.document = {
+    querySelector: () => ({ appendChild: () => {} }),
+    createElement: () => ({
+      styleSheet: globalThis.styleElement,
+      setAttribute: () => {},
+    }),
+  }
+})
+
+pubapi.after.each(() => {
+  delete globalThis.styleElement
+  delete globalThis.document
+})
+
+pubapi('add styles to head only once', () => {
+  const className1 = css({ '.foo': { color: 'blue' } })
+  const className2 = css({ '.foo': { color: 'blue' } })
+
+  assert.equal(className1, className2)
+  assert.equal(styleElement.cssText, '.ffqhmej .foo{color:blue}')
+})
+
+pubapi.run()
