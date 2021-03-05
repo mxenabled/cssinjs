@@ -1,4 +1,4 @@
-import { insertCss } from 'insert-css'
+import { insertCss as _insertCss } from 'insert-css'
 
 // Import ES5 build until _all_ our FE projects no longer support IE11.
 import * as FreeStyle from 'free-style/dist.es5/index.js'
@@ -45,8 +45,9 @@ const insertCss = (() => {
   const seenClassNames = {}
 
   return ([className, styles]) => {
-    if (!seenClassNames[className] === undefined) {
-      insertCss(styles)
+    if (seenClassNames[className] === undefined) {
+      _insertCss(styles)
+      seenClassNames[className] = 1
     }
     return className
   }
