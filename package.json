@@ -9,8 +9,11 @@
     "css",
     "css-in-js"
   ],
+  "bugs": {
+    "url": "https://github.com/mxenabled/cssinjs/issues"
+  },
   "main": "dist/index.js",
-  "homepage": "",
+  "homepage": "https://github.com/mxenabled/cssinjs",
   "prettier": {
     "printWidth": 100,
     "semi": false,
