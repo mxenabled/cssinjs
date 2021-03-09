@@ -11,7 +11,7 @@ excellent and lightweight
 There are three export functions:
 
 ```js
-import { css, global, keyframes } from 'cssinjs'
+import { css, global, keyframes } from '@mxenabled/cssinjs'
 ```
 
 Write regular, vanilla CSS in JavaScript object notation:
