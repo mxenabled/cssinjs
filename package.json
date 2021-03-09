@@ -2,10 +2,13 @@
   "name": "@mxenabled/cssinjs",
   "author": "MX",
   "version": "0.5.0",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "description": "Write CSS in JS notation; get a className back.",
-  "private": true,
-  "keywords": [],
+  "keywords": [
+    "library",
+    "css",
+    "css-in-js"
+  ],
   "main": "dist/index.js",
   "homepage": "",
   "prettier": {
