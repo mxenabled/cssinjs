@@ -6,8 +6,8 @@ import * as FreeStyle from 'free-style/dist.es5/index.js'
 // Function composition
 const compose = (f, g) => (...args) => f(g(...args))
 
-// Run a function then discard the return value
-const discard = (f) => (...args) => (f(...args), undefined)
+// Return undefined
+const discard = () => {}
 
 /**
 Memoize seen CSS objects to avoid re-calculating styles unnecessarily
@@ -43,7 +43,6 @@ avoiding the memory-leak of adding duplicate styles to the style tag.
 **/
 const insertCss = (() => {
   const seenClassNames = {}
-
   return ([className, styles]) => {
     if (seenClassNames[className] === undefined) {
       _insertCss(styles)
@@ -103,7 +102,7 @@ to either make a shallow copy of the CSS object the user passes, or we have to
 mutate that object, and either approach would have memoization implications.
 Since globals are used rarely, this isn't worth the engineering effort.
 **/
-export const global = compose(discard, insertCss, makeGlobal)
+export const global = compose(discard, compose(insertCss, makeGlobal))
 
 /**
 Insert namespaced keyframe CSS and return the supplied/generated identifier for

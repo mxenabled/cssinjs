@@ -249,7 +249,12 @@ function. It does not return a value.
 JavaScript:
 ```js
 global({
-  fontFamily: `"Comic Sans MS", "Comic Sans", cursive`,
+  a: {
+    textDecoration: 'underline',
+    color: 'blue',
+
+    '&:hover': { color: 'green' },
+  },
 })
 ```
 

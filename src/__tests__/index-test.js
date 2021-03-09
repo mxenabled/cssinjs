@@ -114,11 +114,15 @@ basic('keyframes auto name usage', () => {
 
 basic('global usage', () => {
   const [className, styles] = makeGlobal({
-    fontFamily: `"Comic Sans MS", "Comic Sans", cursive`,
+    a: {
+      color: 'blue',
+      textDecoration: 'underline',
+      '&:hover': { color: 'green' },
+    },
   })
 
-  assert.equal(className, 'f115myf8')
-  assert.equal(styles, '{font-family:"Comic Sans MS", "Comic Sans", cursive}')
+  assert.equal(className, 'f1uki7ri')
+  assert.equal(styles, 'a{color:blue;text-decoration:underline}a:hover{color:green}')
 })
 
 basic.run()
@@ -194,6 +198,19 @@ pubapi('add styles to head only once', () => {
 
   assert.equal(className1, className2)
   assert.equal(styleElement.cssText, '.ffqhmej .foo{color:blue}')
+})
+
+pubapi('global styles are present', () => {
+  const className1 = global({
+    a: {
+      color: 'blue',
+      textDecoration: 'underline',
+      '&:hover': { color: 'green' },
+    },
+  })
+
+  assert.equal(className1, undefined)
+  assert.equal(styleElement.cssText, 'a{color:blue;text-decoration:underline}a:hover{color:green}')
 })
 
 pubapi.run()
