@@ -376,8 +376,12 @@ const MyComponent = () => {
 
 ## Release
 
-1.  Run `npm version` to build the project and tag a new version.
-
-<!-- TODO:
-2.  Run `npm publish` to deploy the new version to npm.
--->
+1.  Run `npm version [major|minor|patch]` to build the project and tag a new
+    version.
+2.  Push the new Git commit and new tag to the repository (referenced as the
+    'origin' remote in this example):
+    ```
+    git push origin master
+    git push origin <new-tag-here>
+    ```
+3.  Run `npm publish` to deploy the source and build artifacts to npm.
