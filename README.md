@@ -260,7 +260,13 @@ global({
 
 CSS:
 ```css
-font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:hover {
+  color:green;
+}
 ```
 
 ### Implementation notes
@@ -271,6 +277,10 @@ invocations of `css()` with the same value are idempotent and will only add the
 generated CSS to the page once.
 
 ## Suggestions
+
+Note: some examples below use React, but nothing about this library is specific
+to React. Any UI toolkit that can pass a class to an HTML node, including
+vanilla DOM APIs, can make use of this.
 
 ### Do: reference values and variables
 
@@ -292,6 +302,58 @@ css({
 
 ### Do: make use of multiple classes
 
+```js
+const MyComponent = () => {
+  return (
+    <ul className={className}>
+      {navigationLinks.map((nav, idx) => (
+        <li
+          key={idx}
+          className={`nav-item ${nav.href === window.location.pathname ? 'active' : ''`}
+        >
+          <a href={x.href}>{x.linkText}</a>
+        </li>
+      )}
+    </ul>
+  )
+}
+
+const className = css({
+  '& .nav-item': { cursor: 'pointer' },
+  '& .nav-item.active': { cursor: 'not-allowed' },
+})
+```
+
+### Do: make use of helper functions
+
+```js
+import classnames from 'classnames'
+const matchesCur = path => path === window.location.pathname
+
+const MyComponent = () => {
+  return (
+    <ul className={className}>
+      {navigationLinks.map((nav, idx) => (
+        <li
+          key={idx}
+          className={classnames({
+            'nav-item': true,
+            'active': matchesCur(nav.href),
+          })}
+        >
+          <a href={nav.href}>{nav.linkText}</a>
+        </li>
+      )}
+    </ul>
+  )
+}
+
+const className = css({
+  '& .nav-item': { cursor: 'pointer' },
+  '& .nav-item.active': { cursor: 'not-allowed' },
+})
+```
+
 ### Do: pretend you're writing regular CSS
 
 Create CSS classes as you would if you were writing CSS in a regular .css file
@@ -301,11 +363,14 @@ CSS animations too.
 ```js
 const MyComponent = () => {
   const [focusedSection, setFocus] = useState('foo')
+  const isFocused = name => x => name === x ? 'foreground' : 'background'
 
-  <div className={className}>
-      <div className={focusedSection === 'foo' ? 'foreground' : 'background'}>Foo</div>
-      <div className={focusedSection === 'bar' ? 'foreground' : 'background'}>Bar</div>
-  </div>
+  return (
+    <div className={className}>
+      <div onClick={() => setFocus('foo')} className={isFocused('foo')}>Foo</div>
+      <div onClick={() => setFocus('bar')} className={isFocused('bar')}>Bar</div>
+    </div>
+  )
 }
 
 const className = css({
@@ -317,13 +382,14 @@ const className = css({
 ### Don't: programmatically generate CSS
 
 This system will not de-duplicate any CSS styles. If the contents of the CSS
-object produce a unique combination style then that will be added to the page.
+object produce a unique combination styles then that will be added to the page.
 
-In general be wary of calling `css()` programmatically or wrapping it in
-a function that accepts parameters and generates CSS depending on those
-parameters. That pattern is fine if done sparingly -- for example, once as the
-app is first loading to initialize CSS values for a site-wide theme. But if
-done frequently it can lead to memory concerns.
+Be wary of calling `css()` programmatically or wrapping it in a function that
+accepts parameters and generates CSS depending on those parameters.
+
+This pattern is fine if done sparingly -- for example, once or twice to
+initialize CSS values for a site-wide theme or themes. But if done frequently
+it can easily lead to thousands or more of style sheets in the page head.
 
 ```js
 const genRandomColor = () => '#' + (0x1000000 + Math.random() * 0xffffff)
@@ -334,7 +400,9 @@ const MyComponent = () => {
   const [className, setClassName] = useState('#ffffff')
 
   useEffect(() => {
+    // Randomly change the background color every 100 ms.
     setInterval(() => {
+      // ...generate unique styles for each of the (potentially) 65k colors
       const newClassName = css({
         width: '100px',
         height: '100px',
@@ -347,6 +415,44 @@ const MyComponent = () => {
 
   return (
     <div className={className} />
+  )
+}
+```
+
+### Don't: worry (too much) about performance
+
+It's ok to call `css()` inside a `render()` function that gets called
+frequently. The CSS object is memoized and will not be processed again if the
+same object is passed multiple times. If the CSS object is different but the
+contents of that object have been seen before the CSS will generated again but
+not be re-added to the page -- generating CSS is fast and deterministic.
+
+That said, if there's not a reason to do that it's worth avoding to reduce
+needless processing. Good reasons are generating CSS from a prop or a hook, say
+for the current site theme. (Please note the caveat about generating CSS
+above!)
+
+See `benchmarks.js` for more information.
+
+```js
+const MyComponent = (props) => {
+  return (
+    <div className={css({color: props.theme.textColor})}>
+      Foo
+    </div>
+  )
+}
+
+// or
+
+const MyComponent = () => {
+  const theme = useTheme()
+  const className = css({color: theme.textColor})
+
+  return (
+    <div className={className}>
+      Foo
+    </div>
   )
 }
 ```
