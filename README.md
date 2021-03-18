@@ -412,7 +412,7 @@ CSS animations too.
 ```js
 const MyComponent = () => {
   const [focusedSection, setFocus] = useState('foo')
-  const isFocused = name => x => name === x ? 'foreground' : 'background'
+  const isFocused = name => name === focusedSection ? 'foreground' : 'background'
 
   return (
     <div className={className}>
@@ -423,8 +423,15 @@ const MyComponent = () => {
 }
 
 const className = css({
-  '& .foreground': { backgroundColor: 'white' },
-  '& .background': { backgroundColor: 'gray' },
+  div: {
+    width: '200px',
+    height: '200px',
+    cursor: 'pointer',
+    transition: 'background-color 0.5s',
+  },
+
+  '& .foreground': { backgroundColor: 'darkblue' },
+  '& .background': { backgroundColor: 'lightblue' },
 })
 ```
 
