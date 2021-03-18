@@ -34,9 +34,6 @@ CSS added to the document:
 The generated `className` is a unique string that can be added to any HTML
 element to style it and its children using regular CSS semantics.
 
-*Caveat*: CSS specficity rules apply as usual with the exception of _order_.
-This is because JavaScript objects are unordered. Do not rely on order.
-
 ### Nesting and parent references
 
 The CSS object may include nested objects. The keys of those nested objects may
@@ -281,6 +278,58 @@ generated CSS to the page once.
 Note: some examples below use React, but nothing about this library is specific
 to React. Any UI toolkit that can pass a class to an HTML node, including
 vanilla DOM APIs, can make use of this.
+
+### Don't: rely on the order of styles
+
+CSS specificity rules apply as usual with the exception of _order_. This is
+because JavaScript objects are inherently _unordered_.
+
+For example, an entirely valid CSS strategy is to use a shorthand property for
+most values, and then to follow that with an override for any remaining
+properties. This works because CSS purposefully processes styles in top-down
+order where last wins.
+
+```css
+border-top: 1px solid;
+border-color: blue;
+```
+
+However the same strategy will not always work with this library. In JavaScript
+the order of keys in an object is _not_ stable. In order to produce
+a deterministic hash from an undeterministic object the object keys will be
+sorted lexicographically to generate the resulting CSS.
+
+Sometimes that will produce the desired result (in the case of, say, `border`
+and `borderBottom`), but other times it will not. In the example above the `c`
+in `border-color` will sort above the `t` in `border-top` producing an
+undesired result.
+
+It is ok to use shorthand properties! But avoid mix-and-matching shorthand
+properties with full properties within the same style.
+
+```js
+// Don't do this because borderColor may not be processed after borderTop:
+css({
+  borderTop: '1px solid',
+  borderColor: 'blue',
+})
+
+// Instead do this because the order of processing will not matter:
+css({
+  borderTopWidth: '1px',
+  borderTopStyle: 'solid',
+  borderColor: 'blue',
+})
+
+// It's also ok to increase the specificity of the override to take
+// precedence over order:
+css({
+  borderTop: '1px solid',
+
+  '& .active': { borderColor: 'blue' },
+})
+
+```
 
 ### Do: reference values and variables
 
