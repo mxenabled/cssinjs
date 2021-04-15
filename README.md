@@ -34,9 +34,6 @@ CSS added to the document:
 The generated `className` is a unique string that can be added to any HTML
 element to style it and its children using regular CSS semantics.
 
-*Caveat*: CSS specficity rules apply as usual with the exception of _order_.
-This is because JavaScript objects are unordered. Do not rely on order.
-
 ### Nesting and parent references
 
 The CSS object may include nested objects. The keys of those nested objects may
@@ -260,7 +257,13 @@ global({
 
 CSS:
 ```css
-font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:hover {
+  color:green;
+}
 ```
 
 ### Implementation notes
@@ -271,6 +274,62 @@ invocations of `css()` with the same value are idempotent and will only add the
 generated CSS to the page once.
 
 ## Suggestions
+
+Note: some examples below use React, but nothing about this library is specific
+to React. Any UI toolkit that can pass a class to an HTML node, including
+vanilla DOM APIs, can make use of this.
+
+### Don't: rely on the order of styles
+
+CSS specificity rules apply as usual with the exception of _order_. This is
+because JavaScript objects are inherently _unordered_.
+
+For example, an entirely valid CSS strategy is to use a shorthand property for
+most values, and then to follow that with an override for any remaining
+properties. This works because CSS purposefully processes styles in top-down
+order where last wins.
+
+```css
+border-top: 1px solid;
+border-color: blue;
+```
+
+However the same strategy will not always work with this library. In JavaScript
+the order of keys in an object is _not_ stable. In order to produce
+a deterministic hash from an undeterministic object the object keys will be
+sorted lexicographically to generate the resulting CSS.
+
+Sometimes that will produce the desired result (in the case of, say, `border`
+and `borderBottom`), but other times it will not. In the example above the `c`
+in `border-color` will sort above the `t` in `border-top` producing an
+undesired result.
+
+It is ok to use shorthand properties! But avoid mix-and-matching shorthand
+properties with full properties within the same style.
+
+```js
+// Don't do this because borderColor may not be processed after borderTop:
+css({
+  borderTop: '1px solid',
+  borderColor: 'blue',
+})
+
+// Instead do this because the order of processing will not matter:
+css({
+  borderTopWidth: '1px',
+  borderTopStyle: 'solid',
+  borderColor: 'blue',
+})
+
+// It's also ok to increase the specificity of the override to take
+// precedence over order:
+css({
+  borderTop: '1px solid',
+
+  '& .active': { borderColor: 'blue' },
+})
+
+```
 
 ### Do: reference values and variables
 
@@ -292,6 +351,58 @@ css({
 
 ### Do: make use of multiple classes
 
+```js
+const MyComponent = () => {
+  return (
+    <ul className={className}>
+      {navigationLinks.map((nav, idx) => (
+        <li
+          key={idx}
+          className={`nav-item ${nav.href === window.location.pathname ? 'active' : ''`}
+        >
+          <a href={x.href}>{x.linkText}</a>
+        </li>
+      )}
+    </ul>
+  )
+}
+
+const className = css({
+  '& .nav-item': { cursor: 'pointer' },
+  '& .nav-item.active': { cursor: 'not-allowed' },
+})
+```
+
+### Do: make use of helper functions
+
+```js
+import classnames from 'classnames'
+const matchesCur = path => path === window.location.pathname
+
+const MyComponent = () => {
+  return (
+    <ul className={className}>
+      {navigationLinks.map((nav, idx) => (
+        <li
+          key={idx}
+          className={classnames({
+            'nav-item': true,
+            'active': matchesCur(nav.href),
+          })}
+        >
+          <a href={nav.href}>{nav.linkText}</a>
+        </li>
+      )}
+    </ul>
+  )
+}
+
+const className = css({
+  '& .nav-item': { cursor: 'pointer' },
+  '& .nav-item.active': { cursor: 'not-allowed' },
+})
+```
+
 ### Do: pretend you're writing regular CSS
 
 Create CSS classes as you would if you were writing CSS in a regular .css file
@@ -301,29 +412,40 @@ CSS animations too.
 ```js
 const MyComponent = () => {
   const [focusedSection, setFocus] = useState('foo')
+  const isFocused = name => name === focusedSection ? 'foreground' : 'background'
 
-  <div className={className}>
-      <div className={focusedSection === 'foo' ? 'foreground' : 'background'}>Foo</div>
-      <div className={focusedSection === 'bar' ? 'foreground' : 'background'}>Bar</div>
-  </div>
+  return (
+    <div className={className}>
+      <div onClick={() => setFocus('foo')} className={isFocused('foo')}>Foo</div>
+      <div onClick={() => setFocus('bar')} className={isFocused('bar')}>Bar</div>
+    </div>
+  )
 }
 
 const className = css({
-  '& .foreground': { backgroundColor: 'white' },
-  '& .background': { backgroundColor: 'gray' },
+  div: {
+    width: '200px',
+    height: '200px',
+    cursor: 'pointer',
+    transition: 'background-color 0.5s',
+  },
+
+  '& .foreground': { backgroundColor: 'darkblue' },
+  '& .background': { backgroundColor: 'lightblue' },
 })
 ```
 
 ### Don't: programmatically generate CSS
 
 This system will not de-duplicate any CSS styles. If the contents of the CSS
-object produce a unique combination style then that will be added to the page.
+object produce a unique combination styles then that will be added to the page.
 
-In general be wary of calling `css()` programmatically or wrapping it in
-a function that accepts parameters and generates CSS depending on those
-parameters. That pattern is fine if done sparingly -- for example, once as the
-app is first loading to initialize CSS values for a site-wide theme. But if
-done frequently it can lead to memory concerns.
+Be wary of calling `css()` programmatically or wrapping it in a function that
+accepts parameters and generates CSS depending on those parameters.
+
+This pattern is fine if done sparingly -- for example, once or twice to
+initialize CSS values for a site-wide theme or themes. But if done frequently
+it can easily lead to thousands or more of style sheets in the page head.
 
 ```js
 const genRandomColor = () => '#' + (0x1000000 + Math.random() * 0xffffff)
@@ -334,7 +456,9 @@ const MyComponent = () => {
   const [className, setClassName] = useState('#ffffff')
 
   useEffect(() => {
+    // Randomly change the background color every 100 ms.
     setInterval(() => {
+      // ...generate unique styles for each of the (potentially) 65k colors
       const newClassName = css({
         width: '100px',
         height: '100px',
@@ -347,6 +471,44 @@ const MyComponent = () => {
 
   return (
     <div className={className} />
+  )
+}
+```
+
+### Don't: worry (too much) about performance
+
+It's ok to call `css()` inside a `render()` function that gets called
+frequently. The CSS object is memoized and will not be processed again if the
+same object is passed multiple times. If the CSS object is different but the
+contents of that object have been seen before the CSS will generated again but
+not be re-added to the page -- generating CSS is fast and deterministic.
+
+That said, if there's not a reason to do that it's worth avoding to reduce
+needless processing. Good reasons are generating CSS from a prop or a hook, say
+for the current site theme. (Please note the caveat about generating CSS
+above!)
+
+See `benchmarks.js` for more information.
+
+```js
+const MyComponent = (props) => {
+  return (
+    <div className={css({color: props.theme.textColor})}>
+      Foo
+    </div>
+  )
+}
+
+// or
+
+const MyComponent = () => {
+  const theme = useTheme()
+  const className = css({color: theme.textColor})
+
+  return (
+    <div className={className}>
+      Foo
+    </div>
   )
 }
 ```
