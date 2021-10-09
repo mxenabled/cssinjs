@@ -106,6 +106,29 @@ CSS:
 }
 ```
 
+Note: some CSS pseudo-classes require quotes and those quotes must still be
+written inside JavaScript strings as though you are writing regular CSS:
+
+JavaScript:
+
+```js
+css({
+    '&::after': { content: `url("http://www.example.com/test.png")` },
+})
+// .fmcln77::after { content: url("http://www.example.com/test.png") }
+
+css({
+    '&::after': { content: `"/"` },
+})
+// .f1an8adg::after { content: "/" }
+
+css({
+    '&::after': { content: 'inherit' },
+})
+// .ft98pta::after { content: inherit }
+
+```
+
 ### Media queries
 
 JavaScript:
