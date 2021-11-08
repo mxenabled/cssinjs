@@ -536,6 +536,51 @@ const MyComponent = () => {
 }
 ```
 
+## Known bugs
+
+See the 'bugs' section in the test suite for known bug details. As bugs are
+resolved these tests should be moved to regression tests instead.
+
+### Selector list + pseudo class bug
+
+When using both a [selector
+list](https://developer.mozilla.org/en-US/docs/Web/CSS/Selector_list) and
+[pseudo class](https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes)
+the pseudo class is only correctly attached to the _last_ class in the selector
+list. [Upstream bug
+report](https://github.com/blakeembrey/free-style/issues/103) E.g.:
+
+```js
+const className = css({
+    '& > input, & .something-else > input': {
+      background: 'blue',
+      '&:focus': { background: 'green' },
+    },
+})
+
+// Does produce: .asdf .something-else > input:focus {}
+// Does _not_ produce:  .asdf input:focus {}
+```
+
+Workaround: write each selector separately.
+
+
+```js
+const inputFocusMixin = {
+    background: 'blue',
+    '&:focus': { background: 'green' },
+}
+const className = css({
+    '& > input': {
+        ...inputFocusMixin,
+    },
+    '& .something-else > input': {
+        ...inputFocusMixin,
+    },
+})
+```
+
+
 ## Development
 
 1.  The source files live in the `src` directory and the build files will be
