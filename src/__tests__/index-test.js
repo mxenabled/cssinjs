@@ -214,3 +214,21 @@ pubapi('global styles are present', () => {
 })
 
 pubapi.run()
+
+// ---
+
+const bugs = suite('bugs')
+
+bugs(`selector lists with pseudo classes don't explode`, () => {
+  const [className, result] = makeCss({
+    '& > input, & .something-else > input': {
+      background: 'blue',
+      '&:focus': { background: 'green' },
+    },
+  })
+
+  assert.equal(className, 'f1v7ffqg')
+  assert.doesNotMatch(result, /\.f1v7ffqg > input:focus/)
+})
+
+bugs.run()
